@@ -1,6 +1,6 @@
 name: "Terraform Destroy"
 
-# Trigger the workflow on pull_request
+# Trigger the workflow on workflow dispatch
 on:
   workflow_dispatch:
     inputs:

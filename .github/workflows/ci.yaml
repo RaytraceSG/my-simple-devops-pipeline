@@ -60,6 +60,37 @@ jobs:
         id: plan
         run: terraform plan -input=false -no-color
 
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Show version
+        run: tflint --version
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        id: tflint
+        run: tflint -f compact
+
+      - name: Run Trivy vulnerability scanner in IaC mode
+        id: trivyiac
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "config"
+          hide-progress: true
+          format: "sarif"
+          output: "trivy-results.sarif"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+
       - name: Update Pull Request
         if: always()
         uses: actions/github-script@v7
@@ -72,8 +103,10 @@ jobs:
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖${{ steps.validate.outputs.stdout }}
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            #### TFLint 📖\`${{ steps.tflint.outcome }}\`
+            #### Trivy 📖\`${{ steps.trivyiac.outcome }}\`
 
-            <details><summary>Show Plan</summary>
+            <details><summary>Show Terraform Plan</summary>
 
             \`\`\`${process.env.PLAN}\`\`\`
 
@@ -87,16 +120,3 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
-
-      - uses: terraform-linters/setup-tflint@v3
-        with:
-          tflint_version: latest
-
-      - name: Show version
-        run: tflint --version
-
-      - name: Init TFLint
-        run: tflint --init
-
-      - name: Run TFLint
-        run: tflint -f compact
