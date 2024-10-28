@@ -74,22 +74,25 @@ jobs:
         id: tflint
         run: tflint -f compact
 
-      - name: Run Trivy vulnerability scanner in IaC mode
-        id: trivyiac
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Checkov GitHub Action
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12
         with:
-          scan-type: "config"
-          hide-progress: true
-          format: "sarif"
-          output: "trivy-results.sarif"
-          exit-code: "1"
-          ignore-unfixed: true
-          severity: "CRITICAL,HIGH"
+          # This will add both a CLI output to the console and create a results.sarif file
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
 
-      - name: Upload Trivy scan results to GitHub Security tab
+      - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
+
+        # Results are generated only on a success or failure
+        # this is required since GitHub by default won't run the next step
+        # when the previous one has failed. Security checks that do not pass will 'fail'.
+        # An alternative is to add `continue-on-error: true` to the previous step
+        # Or 'soft_fail: true' to checkov.
+        if: success() || failure()
         with:
-          sarif_file: "trivy-results.sarif"
+          sarif_file: results.sarif
 
       - name: Update Pull Request
         if: always()
@@ -104,7 +107,7 @@ jobs:
             #### Terraform Validation 🤖${{ steps.validate.outputs.stdout }}
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
             #### TFLint 📖\`${{ steps.tflint.outcome }}\`
-            #### Trivy 📖\`${{ steps.trivyiac.outcome }}\`
+            #### Checkov 📖\`${{ steps.checkov.outcome }}\`
 
             <details><summary>Show Terraform Plan</summary>
 
