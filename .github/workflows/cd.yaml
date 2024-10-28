@@ -1,0 +1,49 @@
+name: "Terraform Apply"
+
+# Trigger the workflow on push to the main branch
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - terraform/**
+
+jobs:
+  terraform_apply:
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        # We keep Terraform files in the terraform directory.
+        working-directory: ./terraform
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -no-color
+
+      - name: Terraform Apply
+        run: terraform apply -no-color -auto-approve
+
+      - name: Export terraform outputs
+        id: tfout
+        run: |
+          terraform output
