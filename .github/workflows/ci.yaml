@@ -27,6 +27,7 @@ jobs:
 
     permissions:
       pull-requests: write
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
 
     needs: Initial-Checks
 
